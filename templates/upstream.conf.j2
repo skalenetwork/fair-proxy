@@ -1,0 +1,13 @@
+upstream fair {
+    ip_hash;
+    {% for endpoint in http_endpoints %}
+    server {{ endpoint }} max_fails=1 max_conns=500 fail_timeout=10s;
+    {% endfor %}
+}
+upstream ws-fair {
+    ip_hash;
+    {% for endpoint in ws_endpoints %}
+    server {{ endpoint }} max_fails=1 max_conns=500 fail_timeout=10s;
+    {% endfor %}
+}
+

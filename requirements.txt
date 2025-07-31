@@ -1,0 +1,4 @@
+Jinja2==2.10.1
+colorful==0.5.7
+docker==7.1.0
+requests==2.32.4
