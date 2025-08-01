@@ -45,10 +45,10 @@ def main():
 
     while True:
         logger.info('Collecting endpoints list')
-        chains_endpoints = generate_endpoints(ENDPOINT, SM_ADDRESS)  # TODO: implement!!!
+        chains_endpoints = generate_endpoints(ENDPOINT)
         write_json(CHAINS_INFO_FILEPATH, chains_endpoints)
         update_nginx_configs(chains_endpoints)
-        send_heartbeat(HEARTBEAT_URL)
+        # send_heartbeat(HEARTBEAT_URL)
         logger.info(f'Proxy iteration done, sleeping for {MONITOR_INTERVAL}s...')
         sleep(MONITOR_INTERVAL)
 

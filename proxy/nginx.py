@@ -35,8 +35,8 @@ logger = logging.getLogger(__name__)
 docker_client = docker.DockerClient()
 
 
-def update_nginx_configs(schains_endpoints: list) -> None:
-    generate_nginx_configs(schains_endpoints)
+def update_nginx_configs(schains_endpoints: dict) -> None:
+    process_nginx_config_template(schains_endpoints)
     move_nginx_configs()
     monitor_nginx_container()
 
@@ -75,19 +75,19 @@ def is_container_running(container) -> bool:
     return container.status == CONTAINER_RUNNING_STATUS
 
 
-def generate_nginx_configs(schains_endpoints: list) -> None:
-    logger.info('Generating nginx configs...')
-    for schain_endpoints in schains_endpoints:
-        if not schain_endpoints:
-            continue
-        logger.info(f'Processing template for {schain_endpoints["chain_info"]["schain_name"]}...')
-        process_nginx_config_template(schain_endpoints['chain_info'])
+# def generate_nginx_configs(schains_endpoints: list) -> None:
+#     logger.info('Generating nginx configs...')
+#     for schain_endpoints in schains_endpoints:
+#         if not schain_endpoints:
+#             continue
+#         logger.info(f'Processing template for {schain_endpoints["chain_info"]["schain_name"]}...')
+#         process_nginx_config_template(schain_endpoints['chain_info'])
 
 
 def process_nginx_config_template(chain_info: dict) -> None:
-    upstream_dest = os.path.join(TMP_UPSTREAMS_FOLDER, f'{chain_info["schain_name"]}.conf')
+    upstream_dest = os.path.join(TMP_UPSTREAMS_FOLDER, 'fair.conf')
     process_template(UPSTREAM_NGINX_TEMPLATE, upstream_dest, chain_info)
 
 
 if __name__ == '__main__':
-    generate_nginx_configs([])
+    process_nginx_config_template({})

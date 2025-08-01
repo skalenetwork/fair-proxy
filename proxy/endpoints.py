@@ -19,29 +19,61 @@
 
 
 import os
-from eth_typing import HexStr
-from skale.utils.web3_utils import init_web3
-from skale.wallets import Web3Wallet
+import requests
+import logging
+
 from skale import FairManager
 from proxy.skaled_ports import SkaledPorts
 from proxy.config import SM_ADDRESS
+from proxy.helper import make_rpc_call
+from proxy.config import ALLOWED_TIMESTAMP_DIFF
+
+logger = logging.getLogger(__name__)
 
 ENDPOINT = os.getenv('FAIR_ENDPOINT')
-ETH_PRIVATE_KEY = os.getenv('ETH_PRIVATE_KEY')
+
+URL_PREFIXES = {
+    'http': 'http://',
+    'https': 'https://',
+    'ws': 'ws://',
+    'wss': 'wss://',
+    'infoHttp': 'http://'
+}
 
 
 def init_fair(endpoint) -> FairManager:
-    web3 = init_web3(endpoint)
-    wallet = Web3Wallet(HexStr(ETH_PRIVATE_KEY), web3)
-    return FairManager(endpoint, SM_ADDRESS, wallet)
+    return FairManager(endpoint, SM_ADDRESS)
 
-def generate_endpoints(endpoint: str) -> list:
+
+def _compose_endpoints(node_dict, endpoint_type):
+    for prefix_name in URL_PREFIXES:
+        prefix = URL_PREFIXES[prefix_name]
+        port = node_dict[f'{prefix_name}RpcPort']
+        key_name = f'{prefix_name}_endpoint_{endpoint_type}'
+        node_dict[key_name] = f'{prefix}{node_dict[endpoint_type]}:{port}'
+
+
+def generate_endpoints(endpoint: str) -> dict:
     fair = init_fair(endpoint)
     node_ids = fair.nodes.get_active_node_ids()
-    print(node_ids)
+    logger.info(node_ids)
+    nodes = []
     for node_id in node_ids:
+
         node = fair.nodes.get(node_id)
-        print(f'ID {node_id}: {node}')
+        node_dict = {
+            'id': node.id,
+            'name': node.name,
+            'ip': node.ip_str,
+            'base_port': node.port,
+            'domain': node.domain_name
+        }
+        logger.debug(f'ID {node_id}: {node}')
+        node_dict.update(calc_ports(node_dict['base_port']))
+        _compose_endpoints(node_dict, endpoint_type='domain')
+        nodes.append(node_dict)
+    return get_endpoint_dict(nodes)
+
 
 def calc_ports(base_port):
     return {
@@ -53,6 +85,57 @@ def calc_ports(base_port):
     }
 
 
-if __name__ == '__main__':
-    generate_endpoints(ENDPOINT)
+def get_block_ts(http_endpoint: str) -> int:
+    try:
+        res = make_rpc_call(http_endpoint, 'eth_getBlockByNumber', ['latest', False])
+        if res and res.json():
+            res_data = res.json()
+            latest_schain_timestamp_hex = res_data['result']['timestamp']
+            return int(latest_schain_timestamp_hex, 16)
+    except Exception as e:
+        logger.warning(f'Failed to request latest block for {http_endpoint} ({e})')
+    return -1
 
+
+def is_node_out_of_sync(ts: int, compare_ts: int) -> bool:
+    return abs(compare_ts - ts) > ALLOWED_TIMESTAMP_DIFF
+
+
+def url_ok(url) -> bool:
+    try:
+        r = requests.head(url, timeout=10)
+        return bool(r.status_code)
+    except requests.exceptions.RequestException:
+        return False
+
+
+def get_endpoint_dict(nodes):
+    http_endpoints = []
+    ws_endpoints = []
+    for node in nodes:
+        http_endpoint = node['http_endpoint_domain']
+        node['block_ts'] = get_block_ts(http_endpoint)
+
+    max_ts = max(node['block_ts'] for node in nodes)
+    logger.info(f'max_ts: {max_ts}')
+
+    for node in nodes:
+        http_endpoint = node['http_endpoint_domain']
+        if not url_ok(http_endpoint):
+            logger.warning(f'{http_endpoint} is not accesible, removing from the list')
+            continue
+        if is_node_out_of_sync(node['block_ts'], max_ts):
+            logger.warning(f'{http_endpoint} ts: {node["block_ts"]}, max ts for chain: {max_ts}, '
+                           f'allowed timestamp diff: {ALLOWED_TIMESTAMP_DIFF}')
+            continue
+        http_endpoints.append(http_endpoint.removeprefix(URL_PREFIXES['http']))
+        ws_endpoints.append(node['ws_endpoint_domain'].removeprefix(URL_PREFIXES['ws']))
+    return {
+        'http_endpoints': http_endpoints,
+        'ws_endpoints': ws_endpoints,
+    }
+
+
+if __name__ == '__main__':
+    ends = generate_endpoints(ENDPOINT)
+    print(f'ENDS: {ends}')
