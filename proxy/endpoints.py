@@ -18,6 +18,41 @@
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 
-def generate_endpoints(endpoint: str, sm_address: str) -> list:
-    pass
+import os
+from eth_typing import HexStr
+from skale.utils.web3_utils import init_web3
+from skale.wallets import Web3Wallet
+from skale import FairManager
+from proxy.skaled_ports import SkaledPorts
+from proxy.config import SM_ADDRESS
+
+ENDPOINT = os.getenv('FAIR_ENDPOINT')
+ETH_PRIVATE_KEY = os.getenv('ETH_PRIVATE_KEY')
+
+
+def init_fair(endpoint) -> FairManager:
+    web3 = init_web3(endpoint)
+    wallet = Web3Wallet(HexStr(ETH_PRIVATE_KEY), web3)
+    return FairManager(endpoint, SM_ADDRESS, wallet)
+
+def generate_endpoints(endpoint: str) -> list:
+    fair = init_fair(endpoint)
+    node_ids = fair.nodes.get_active_node_ids()
+    print(node_ids)
+    for node_id in node_ids:
+        node = fair.nodes.get(node_id)
+        print(f'ID {node_id}: {node}')
+
+def calc_ports(base_port):
+    return {
+        'httpRpcPort': base_port + SkaledPorts.HTTP_JSON.value,
+        'httpsRpcPort': base_port + SkaledPorts.HTTPS_JSON.value,
+        'wsRpcPort': base_port + SkaledPorts.WS_JSON.value,
+        'wssRpcPort': base_port + SkaledPorts.WSS_JSON.value,
+        'infoHttpRpcPort': base_port + SkaledPorts.INFO_HTTP_JSON.value
+    }
+
+
+if __name__ == '__main__':
+    generate_endpoints(ENDPOINT)
 
