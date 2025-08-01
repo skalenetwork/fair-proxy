@@ -1,6 +1,7 @@
 FROM python:3.11-bookworm
 
 RUN apt-get update
+RUN apt-get update && apt-get install -y swig gcc python3-dev libssl-dev
 
 WORKDIR /usr/src/proxy
 
