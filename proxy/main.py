@@ -27,7 +27,7 @@ from proxy.helper import init_default_logger, write_json
 from proxy.heartbeat import send_heartbeat
 from proxy.str_formatters import arguments_list_string
 from proxy.config import (
-    CHAINS_INFO_FILEPATH, MONITOR_INTERVAL, ENDPOINT, SM_ADDRESS, TMP_UPSTREAMS_FOLDER,
+    CHAINS_INFO_FILEPATH, MONITOR_INTERVAL, ENDPOINT, TMP_UPSTREAMS_FOLDER,
     HEARTBEAT_URL
 )
 
