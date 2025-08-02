@@ -24,9 +24,10 @@ import logging
 
 from skale import FairManager
 from proxy.skaled_ports import SkaledPorts
-from proxy.config import SM_ADDRESS
+from proxy.config import SM_ADDRESS, ANCHOR_FILEPATH
 from proxy.helper import make_rpc_call
 from proxy.config import ALLOWED_TIMESTAMP_DIFF
+from proxy.helper import read_json
 
 logger = logging.getLogger(__name__)
 
@@ -41,8 +42,26 @@ URL_PREFIXES = {
 }
 
 
-def init_fair(endpoint) -> FairManager:
-    return FairManager(endpoint, SM_ADDRESS)
+class FairManagerInitError(Exception):
+    """Custom exception for failures during FairManager initialization"""
+    pass
+
+def init_fair() -> FairManager:
+    """Initializes a FairManager by trying a list of anchor endpoints"""
+    try:
+        endpoints_data = read_json(ANCHOR_FILEPATH)
+        http_endpoints = endpoints_data.get('http_endpoints', [])
+    except Exception as e:
+        raise FairManagerInitError(f"Failed to read or parse anchor endpoints file: {e}") from e
+
+    for endpoint in http_endpoints:
+        try:
+            return FairManager(endpoint, SM_ADDRESS)
+        except Exception as e:
+            logger.info(f"Failed to connect to anchor endpoint '{endpoint}': {e}")
+
+    raise FairManagerInitError("No working anchor endpoint found. FAIR manager "
+                               "could not be initialized.")
 
 
 def _compose_endpoints(node_dict, endpoint_type):
@@ -53,8 +72,8 @@ def _compose_endpoints(node_dict, endpoint_type):
         node_dict[key_name] = f'{prefix}{node_dict[endpoint_type]}:{port}'
 
 
-def generate_endpoints(endpoint: str) -> dict:
-    fair = init_fair(endpoint)
+def generate_endpoints() -> dict:
+    fair = init_fair()
     node_ids = fair.nodes.get_active_node_ids()
     logger.info(node_ids)
     nodes = []

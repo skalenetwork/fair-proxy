@@ -30,9 +30,10 @@ MONITOR_INTERVAL = os.getenv('MONITOR_INTERVAL', 10 * 60)
 HEARTBEAT_URL = os.getenv('HEARTBEAT_URL')
 
 NGINX_WWW_FOLDER = os.path.join(PROJECT_PATH, 'www')
-CHAINS_INFO_FILEPATH = os.path.join(NGINX_WWW_FOLDER, 'chains.json')
+CHAIN_INFO_FILEPATH = os.path.join(NGINX_WWW_FOLDER, 'chain.json')
 
 DATA_FOLDER = os.path.join(PROJECT_PATH, 'data')
+ANCHOR_FILEPATH = os.path.join(DATA_FOLDER, 'anchor_endpoints.json')
 
 SM_ADDRESS = os.getenv('SM_ADDRESS')
 

@@ -27,7 +27,7 @@ from proxy.helper import init_default_logger, write_json
 from proxy.heartbeat import send_heartbeat
 from proxy.str_formatters import arguments_list_string
 from proxy.config import (
-    CHAINS_INFO_FILEPATH, MONITOR_INTERVAL, ENDPOINT, TMP_UPSTREAMS_FOLDER,
+    CHAIN_INFO_FILEPATH, MONITOR_INTERVAL, ENDPOINT, TMP_UPSTREAMS_FOLDER,
     HEARTBEAT_URL
 )
 
@@ -45,8 +45,8 @@ def main():
 
     while True:
         logger.info('Collecting endpoints list')
-        chains_endpoints = generate_endpoints(ENDPOINT)
-        write_json(CHAINS_INFO_FILEPATH, chains_endpoints)
+        chains_endpoints = generate_endpoints()
+        write_json(CHAIN_INFO_FILEPATH, chains_endpoints)
         update_nginx_configs(chains_endpoints)
         # send_heartbeat(HEARTBEAT_URL)
         logger.info(f'Proxy iteration done, sleeping for {MONITOR_INTERVAL}s...')
