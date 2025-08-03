@@ -18,141 +18,148 @@
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 
-import os
-import requests
 import logging
+from dataclasses import dataclass, field
+from typing import List
 
+import requests
 from skale import FairManager
+
+from proxy.config import ALLOWED_TIMESTAMP_DIFF, SM_ADDRESS, ANCHOR_FILEPATH
+from proxy.helper import make_rpc_call, read_json
 from proxy.skaled_ports import SkaledPorts
-from proxy.config import SM_ADDRESS, ANCHOR_FILEPATH
-from proxy.helper import make_rpc_call
-from proxy.config import ALLOWED_TIMESTAMP_DIFF
-from proxy.helper import read_json
 
 logger = logging.getLogger(__name__)
 
-URL_PREFIXES = {
-    'http': 'http://',
-    'https': 'https://',
-    'ws': 'ws://',
-    'wss': 'wss://',
-    'infoHttp': 'http://'
-}
+URL_PREFIXES = {'http': 'http://', 'ws': 'ws://'}
 
 
 class FairManagerInitError(Exception):
     """Custom exception for failures during FairManager initialization"""
     pass
 
+
+@dataclass
+class FairNode:
+    """A dataclass to represent a Fair node with its endpoints"""
+    id: int
+    name: str
+    ip: str
+    domain: str
+    base_port: int
+    http_endpoint: str = field(init=False)
+    ws_endpoint: str = field(init=False)
+    block_ts: int = -1
+
+    def __post_init__(self):
+        """Calculates endpoints after the node object is created."""
+        http_port = self.base_port + SkaledPorts.HTTP_JSON.value
+        ws_port = self.base_port + SkaledPorts.WS_JSON.value
+        self.http_endpoint = f"{URL_PREFIXES['http']}{self.domain}:{http_port}"
+        self.ws_endpoint = f"{URL_PREFIXES['ws']}{self.domain}:{ws_port}"
+
+    def fetch_block_timestamp(self):
+        """Fetches and updates the timestamp of the latest block from the node"""
+        try:
+            res = make_rpc_call(self.http_endpoint, 'eth_getBlockByNumber', ['latest', False])
+            if res and res.ok:
+                timestamp_hex = res.json()['result']['timestamp']
+                self.block_ts = int(timestamp_hex, 16)
+        except (requests.RequestException, KeyError, TypeError, ValueError) as e:
+            logger.warning(f'Could not get block timestamp for {self.http_endpoint}: {e}')
+            self.block_ts = -1
+
+    def is_accessible(self) -> bool:
+        """Checks if the node's http endpoint is responsive"""
+        try:
+            response = requests.head(self.http_endpoint, timeout=10)
+            return response.status_code < 400
+        except requests.RequestException:
+            return False
+
+    def is_synced(self, max_timestamp: int) -> bool:
+        """Checks if the node is synced"""
+        if self.block_ts < 0:
+            return False
+        return abs(max_timestamp - self.block_ts) <= ALLOWED_TIMESTAMP_DIFF
+
+
 def init_fair() -> FairManager:
-    """Initializes a FairManager by trying a list of anchor endpoints"""
+    """Initializes a FairManager by trying a list of anchor endpoints."""
     try:
         endpoints_data = read_json(ANCHOR_FILEPATH)
         http_endpoints = endpoints_data.get('http_endpoints', [])
     except Exception as e:
-        raise FairManagerInitError(f"Failed to read or parse anchor endpoints file: {e}") from e
+        raise FairManagerInitError(f'Failed to read or parse anchor endpoints file: {e}') from e
 
     for endpoint in http_endpoints:
         try:
-            return FairManager(endpoint, SM_ADDRESS)
+            fair = FairManager(endpoint, SM_ADDRESS)
+            logger.info(f'FAIR Manager initialized successfully with endpoint: {endpoint}')
+            return fair
         except Exception as e:
             logger.info(f"Failed to connect to anchor endpoint '{endpoint}': {e}")
 
-    raise FairManagerInitError("No working anchor endpoint found. FAIR manager "
-                               "could not be initialized.")
+    raise FairManagerInitError('No working anchor endpoint found.')
 
 
-def _compose_endpoints(node_dict, endpoint_type):
-    for prefix_name in URL_PREFIXES:
-        prefix = URL_PREFIXES[prefix_name]
-        port = node_dict[f'{prefix_name}RpcPort']
-        key_name = f'{prefix_name}_endpoint_{endpoint_type}'
-        node_dict[key_name] = f'{prefix}{node_dict[endpoint_type]}:{port}'
+def _fetch_active_nodes(fair_manager: FairManager) -> List[FairNode]:
+    """Retrieves all active nodes and converts them into FairNode objects"""
+    node_ids = fair_manager.nodes.get_active_node_ids()
+    logger.info(f'Found {len(node_ids)} active nodes: {node_ids}')
+    return [
+        FairNode(
+            id=node.id, name=node.name, ip=node.ip_str,
+            domain=node.domain_name, base_port=node.port
+        )
+        for node_id in node_ids
+        if (node := fair_manager.nodes.get(node_id))
+    ]
+
+
+def _filter_healthy_nodes(nodes: List[FairNode]) -> List[FairNode]:
+    """Filters a list of nodes to return only accessible and synced ones"""
+    for node in nodes:
+        node.fetch_block_timestamp()
+
+    valid_timestamps = [node.block_ts for node in nodes if node.block_ts >= 0]
+    if not valid_timestamps:
+        logger.warning('Could not determine a maximum timestamp - no nodes reported a valid block')
+        return []
+    max_ts = max(valid_timestamps)
+    logger.info(f'Maximum block timestamp across all nodes: {max_ts}')
+
+    healthy_nodes = []
+    for node in nodes:
+        if not node.is_accessible():
+            logger.warning(f'Node {node.id} ({node.http_endpoint}) is not accessible')
+            continue
+        if not node.is_synced(max_ts):
+            logger.warning(
+                f'Node {node.id} ({node.http_endpoint}) is not synced. '
+                f'(Node TS: {node.block_ts}, Max TS: {max_ts})'
+            )
+            continue
+        healthy_nodes.append(node)
+
+    logger.info(f'Found {len(healthy_nodes)} healthy and synchronized nodes')
+    return healthy_nodes
 
 
 def generate_endpoints() -> dict:
-    fair = init_fair()
-    logger.info(f'FAIR Manager is inited with endpoint {fair._endpoint}')
-    node_ids = fair.nodes.get_active_node_ids()
-    logger.info(node_ids)
-    nodes = []
-    for node_id in node_ids:
+    """Generate http and ws endpoints of active healthy FAIR nodes"""
+    fair_manager = init_fair()
+    all_nodes = _fetch_active_nodes(fair_manager)
+    healthy_nodes = _filter_healthy_nodes(all_nodes)
 
-        node = fair.nodes.get(node_id)
-        node_dict = {
-            'id': node.id,
-            'name': node.name,
-            'ip': node.ip_str,
-            'base_port': node.port,
-            'domain': node.domain_name
-        }
-        logger.debug(f'ID {node_id}: {node}')
-        node_dict.update(calc_ports(node_dict['base_port']))
-        _compose_endpoints(node_dict, endpoint_type='domain')
-        nodes.append(node_dict)
-    return get_endpoint_dict(nodes)
-
-
-def calc_ports(base_port):
     return {
-        'httpRpcPort': base_port + SkaledPorts.HTTP_JSON.value,
-        'httpsRpcPort': base_port + SkaledPorts.HTTPS_JSON.value,
-        'wsRpcPort': base_port + SkaledPorts.WS_JSON.value,
-        'wssRpcPort': base_port + SkaledPorts.WSS_JSON.value,
-        'infoHttpRpcPort': base_port + SkaledPorts.INFO_HTTP_JSON.value
+        'http_endpoints': [
+            node.http_endpoint.removeprefix(URL_PREFIXES['http']) for node in healthy_nodes
+        ],
+        'ws_endpoints': [
+            node.ws_endpoint.removeprefix(URL_PREFIXES['ws']) for node in healthy_nodes
+        ],
     }
-
-
-def get_block_ts(http_endpoint: str) -> int:
-    try:
-        res = make_rpc_call(http_endpoint, 'eth_getBlockByNumber', ['latest', False])
-        if res and res.json():
-            res_data = res.json()
-            latest_schain_timestamp_hex = res_data['result']['timestamp']
-            return int(latest_schain_timestamp_hex, 16)
-    except Exception as e:
-        logger.warning(f'Failed to request latest block for {http_endpoint} ({e})')
-    return -1
-
-
-def is_node_out_of_sync(ts: int, compare_ts: int) -> bool:
-    return abs(compare_ts - ts) > ALLOWED_TIMESTAMP_DIFF
-
-
-def url_ok(url) -> bool:
-    try:
-        r = requests.head(url, timeout=10)
-        return bool(r.status_code)
-    except requests.exceptions.RequestException:
-        return False
-
-
-def get_endpoint_dict(nodes):
-    http_endpoints = []
-    ws_endpoints = []
-    for node in nodes:
-        http_endpoint = node['http_endpoint_domain']
-        node['block_ts'] = get_block_ts(http_endpoint)
-
-    max_ts = max(node['block_ts'] for node in nodes)
-    logger.info(f'max_ts: {max_ts}')
-
-    for node in nodes:
-        http_endpoint = node['http_endpoint_domain']
-        if not url_ok(http_endpoint):
-            logger.warning(f'{http_endpoint} is not accesible, removing from the list')
-            continue
-        if is_node_out_of_sync(node['block_ts'], max_ts):
-            logger.warning(f'{http_endpoint} ts: {node["block_ts"]}, max ts for chain: {max_ts}, '
-                           f'allowed timestamp diff: {ALLOWED_TIMESTAMP_DIFF}')
-            continue
-        http_endpoints.append(http_endpoint.removeprefix(URL_PREFIXES['http']))
-        ws_endpoints.append(node['ws_endpoint_domain'].removeprefix(URL_PREFIXES['ws']))
-    return {
-        'http_endpoints': http_endpoints,
-        'ws_endpoints': ws_endpoints,
-    }
-
 
 if __name__ == '__main__':
     endpoints = generate_endpoints()
