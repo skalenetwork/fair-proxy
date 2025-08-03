@@ -1,7 +1,6 @@
 services:
   fair-proxy:
     environment:
-      FAIR_ENDPOINT: ${FAIR_ENDPOINT}
       HEARTBEAT_URL: ${HEARTBEAT_URL}
       SM_ADDRESS: ${SM_ADDRESS}
     image: fair-proxy:latest
