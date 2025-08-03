@@ -35,8 +35,8 @@ logger = logging.getLogger(__name__)
 docker_client = docker.DockerClient()
 
 
-def update_nginx_configs(schains_endpoints: dict) -> None:
-    process_nginx_config_template(schains_endpoints)
+def update_nginx_configs(chain_endpoints: dict) -> None:
+    process_nginx_config_template(chain_endpoints)
     move_nginx_configs()
     monitor_nginx_container()
 

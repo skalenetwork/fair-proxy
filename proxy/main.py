@@ -41,9 +41,9 @@ def main():
 
     while True:
         logger.info("Starting new endpoint collection cycle...")
-        chains_endpoints = generate_endpoints()
-        write_json(CHAIN_INFO_FILEPATH, chains_endpoints)
-        update_nginx_configs(chains_endpoints)
+        chain_endpoints = generate_endpoints()
+        write_json(CHAIN_INFO_FILEPATH, chain_endpoints)
+        update_nginx_configs(chain_endpoints)
         send_heartbeat(HEARTBEAT_URL)
         logger.info(f"Proxy cycle finished. Sleeping for {MONITOR_INTERVAL}s.")
         sleep(MONITOR_INTERVAL)
