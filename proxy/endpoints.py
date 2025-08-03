@@ -18,11 +18,12 @@
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 
+import json
 import logging
+import requests
 from dataclasses import dataclass, field
 from typing import List
 
-import requests
 from skale import FairManager
 
 from proxy.config import ALLOWED_TIMESTAMP_DIFF, SM_ADDRESS, ANCHOR_FILEPATH
@@ -146,20 +147,35 @@ def _filter_healthy_nodes(nodes: List[FairNode]) -> List[FairNode]:
     return healthy_nodes
 
 
-def generate_endpoints() -> dict:
+def update_anchor_file(http_endpoints: List[str]):
+    """Overwrites the anchor endpoints file with the latest list of healthy endpoints."""
+    logger.info(f'Updating anchor file at {ANCHOR_FILEPATH} with {len(http_endpoints)} endpoints.')
+    try:
+        data_to_write = {'http_endpoints': http_endpoints}
+        with open(ANCHOR_FILEPATH, 'w') as f:
+            json.dump(data_to_write, f, indent=4)
+    except IOError as e:
+        logger.error(f'Failed to write updated anchor file: {e}')
+
+
+def generate_endpoints() -> tuple[dict, list]:
     """Generate http and ws endpoints of active healthy FAIR nodes"""
     fair_manager = init_fair()
     all_nodes = _fetch_active_nodes(fair_manager)
     healthy_nodes = _filter_healthy_nodes(all_nodes)
 
-    return {
+    healthy_http_endpoints = [node.http_endpoint for node in healthy_nodes]
+
+    nginx_config = {
         'http_endpoints': [
-            node.http_endpoint.removeprefix(URL_PREFIXES['http']) for node in healthy_nodes
+            http_ep.removeprefix('http://') for http_ep in healthy_http_endpoints
         ],
         'ws_endpoints': [
-            node.ws_endpoint.removeprefix(URL_PREFIXES['ws']) for node in healthy_nodes
+            node.ws_endpoint.removeprefix('ws://') for node in healthy_nodes
         ],
     }
+
+    return nginx_config, healthy_http_endpoints
 
 if __name__ == '__main__':
     endpoints = generate_endpoints()

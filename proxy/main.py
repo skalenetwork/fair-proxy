@@ -22,7 +22,7 @@ from time import sleep
 from pathlib import Path
 
 from proxy.nginx import update_nginx_configs
-from proxy.endpoints import generate_endpoints
+from proxy.endpoints import generate_endpoints, update_anchor_file
 from proxy.helper import init_default_logger, write_json
 from proxy.heartbeat import send_heartbeat
 from proxy.config import (
@@ -41,9 +41,14 @@ def main():
 
     while True:
         logger.info("Starting new endpoint collection cycle...")
-        chain_endpoints = generate_endpoints()
-        write_json(CHAIN_INFO_FILEPATH, chain_endpoints)
-        update_nginx_configs(chain_endpoints)
+        nginx_endpoints, healthy_http_list = generate_endpoints()
+        logger.info(f'ANCHOR: {healthy_http_list}')
+        if healthy_http_list:
+            update_anchor_file(healthy_http_list)
+        else:
+            logger.warning("No healthy endpoints found. Anchor endpoints file will not be updated")
+        write_json(CHAIN_INFO_FILEPATH, nginx_endpoints)
+        update_nginx_configs(nginx_endpoints)
         send_heartbeat(HEARTBEAT_URL)
         logger.info(f"Proxy cycle finished. Sleeping for {MONITOR_INTERVAL}s.")
         sleep(MONITOR_INTERVAL)
