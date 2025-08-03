@@ -25,9 +25,8 @@ from proxy.nginx import update_nginx_configs
 from proxy.endpoints import generate_endpoints
 from proxy.helper import init_default_logger, write_json
 from proxy.heartbeat import send_heartbeat
-from proxy.str_formatters import arguments_list_string
 from proxy.config import (
-    CHAIN_INFO_FILEPATH, MONITOR_INTERVAL, ENDPOINT, TMP_UPSTREAMS_FOLDER,
+    CHAIN_INFO_FILEPATH, MONITOR_INTERVAL, TMP_UPSTREAMS_FOLDER,
     HEARTBEAT_URL
 )
 
@@ -37,9 +36,7 @@ logger = logging.getLogger(__name__)
 
 def main():
     init_default_logger()
-    logger.info(arguments_list_string({
-        'Endpoint': ENDPOINT
-        }, 'Starting FAIR Proxy server'))
+    logger.info('Starting FAIR Proxy server')
 
     Path(TMP_UPSTREAMS_FOLDER).mkdir(parents=True, exist_ok=True)
 
@@ -48,7 +45,7 @@ def main():
         chains_endpoints = generate_endpoints()
         write_json(CHAIN_INFO_FILEPATH, chains_endpoints)
         update_nginx_configs(chains_endpoints)
-        # send_heartbeat(HEARTBEAT_URL)
+        send_heartbeat(HEARTBEAT_URL)
         logger.info(f'Proxy iteration done, sleeping for {MONITOR_INTERVAL}s...')
         sleep(MONITOR_INTERVAL)
 

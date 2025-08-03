@@ -22,7 +22,6 @@ import os
 DIR_PATH = os.path.dirname(os.path.realpath(__file__))
 PROJECT_PATH = os.path.join(DIR_PATH, os.pardir)
 
-ENDPOINT = os.environ['FAIR_ENDPOINT']
 PORTS_PER_SCHAIN = 64
 
 MONITOR_INTERVAL = os.getenv('MONITOR_INTERVAL', 10 * 60)

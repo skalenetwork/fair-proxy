@@ -31,8 +31,6 @@ from proxy.helper import read_json
 
 logger = logging.getLogger(__name__)
 
-ENDPOINT = os.getenv('FAIR_ENDPOINT')
-
 URL_PREFIXES = {
     'http': 'http://',
     'https': 'https://',
@@ -74,6 +72,7 @@ def _compose_endpoints(node_dict, endpoint_type):
 
 def generate_endpoints() -> dict:
     fair = init_fair()
+    logger.info(f'FAIR Manager is inited with endpoint {fair._endpoint}')
     node_ids = fair.nodes.get_active_node_ids()
     logger.info(node_ids)
     nodes = []
@@ -156,5 +155,5 @@ def get_endpoint_dict(nodes):
 
 
 if __name__ == '__main__':
-    ends = generate_endpoints(ENDPOINT)
-    print(f'ENDS: {ends}')
+    endpoints = generate_endpoints()
+    print(f'Endpoints: {endpoints}')
