@@ -20,6 +20,7 @@
 import os
 import shutil
 import logging
+import time
 from pathlib import Path
 
 import docker
@@ -63,12 +64,21 @@ def monitor_nginx_container(d_client=None):
 
 
 def reload_nginx(container) -> int:
-    res = container.exec_run(cmd='nginx -s reload')
-    if res != 0:
-        logger.warning('Could not reload nginx configuration, check out nginx logs')
+    """Safely reloads NGINX configuration"""
+    logger.info("Waiting briefly before reloading NGINX...")
+    time.sleep(0.5)
+    logger.info("Sending reload command to NGINX...")
+    exit_code, output = container.exec_run(cmd='nginx -s reload')
+    if exit_code != 0:
+        logger.warning(
+            "Could not reload NGINX configuration. "
+            f"Exit Code: {exit_code}\n"
+            f"Output: {output.decode('utf-8').strip()}"
+        )
     else:
-        logger.info('Successfully reloaded nginx service')
-    return res
+        logger.info('Successfully reloaded NGINX service')
+
+    return exit_code
 
 
 def is_container_running(container) -> bool:
