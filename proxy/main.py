@@ -26,27 +26,26 @@ from proxy.endpoints import generate_endpoints
 from proxy.helper import init_default_logger, write_json
 from proxy.heartbeat import send_heartbeat
 from proxy.config import (
-    CHAIN_INFO_FILEPATH, MONITOR_INTERVAL, TMP_UPSTREAMS_FOLDER,
-    HEARTBEAT_URL
+    CHAIN_INFO_FILEPATH, MONITOR_INTERVAL, TMP_UPSTREAMS_FOLDER, HEARTBEAT_URL
 )
-
 
 logger = logging.getLogger(__name__)
 
-
-def main():
+def setup_environment():
     init_default_logger()
-    logger.info('Starting FAIR Proxy server')
-
+    logger.info("Starting FAIR Proxy server")
     Path(TMP_UPSTREAMS_FOLDER).mkdir(parents=True, exist_ok=True)
 
+def main():
+    setup_environment()
+
     while True:
-        logger.info('Collecting endpoints list')
+        logger.info("Starting new endpoint collection cycle...")
         chains_endpoints = generate_endpoints()
         write_json(CHAIN_INFO_FILEPATH, chains_endpoints)
         update_nginx_configs(chains_endpoints)
         send_heartbeat(HEARTBEAT_URL)
-        logger.info(f'Proxy iteration done, sleeping for {MONITOR_INTERVAL}s...')
+        logger.info(f"Proxy cycle finished. Sleeping for {MONITOR_INTERVAL}s.")
         sleep(MONITOR_INTERVAL)
 
 
