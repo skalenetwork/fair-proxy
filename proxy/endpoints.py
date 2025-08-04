@@ -27,7 +27,7 @@ from typing import List
 from skale import FairManager
 
 from proxy.config import ALLOWED_TIMESTAMP_DIFF, SM_ADDRESS, ANCHOR_FILEPATH
-from proxy.helper import make_rpc_call, read_json
+from proxy.helper import make_rpc_call, read_json, write_json
 from proxy.skaled_ports import SkaledPorts
 
 logger = logging.getLogger(__name__)
@@ -154,12 +154,8 @@ def _filter_healthy_nodes(nodes: List[FairNode]) -> List[FairNode]:
 def update_anchor_file(http_endpoints: List[str]):
     """Overwrites the anchor endpoints file with the latest list of healthy endpoints"""
     logger.info(f'Updating anchor endpoints file with {len(http_endpoints)} endpoints')
-    try:
-        data_to_write = {'http_endpoints': http_endpoints}
-        with open(ANCHOR_FILEPATH, 'w') as f:
-            json.dump(data_to_write, f, indent=4)
-    except IOError as e:
-        logger.error(f'Failed to write updated anchor endpoints file: {e}')
+    data_to_write = {'http_endpoints': http_endpoints}
+    write_json(ANCHOR_FILEPATH, data_to_write)
 
 
 def generate_endpoints() -> tuple[dict, list]:
