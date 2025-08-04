@@ -13,7 +13,7 @@ TEMPLATE_FILE="$CONFIG_DIR/nginx.conf.template"
 TARGET_FILE="$CONFIG_DIR/nginx.conf"
 
 DATA_DIR="$PROJECT_DIR/data"
-ANCHOR_FILE="$CONFIG_DIR/anchor_endpoints.json"
+ANCHOR_FILE="$DATA_DIR/anchor_endpoints.json"
 
 START_MARKER="#REAL_IP_CONFIG_START"
 END_MARKER="#REAL_IP_CONFIG_END"
