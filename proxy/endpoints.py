@@ -53,7 +53,7 @@ class FairNode:
     block_ts: int = -1
 
     def __post_init__(self):
-        """Calculates endpoints after the node object is created."""
+        """Calculates endpoints after the node object is created"""
         http_port = self.base_port + SkaledPorts.HTTP_JSON.value
         ws_port = self.base_port + SkaledPorts.WS_JSON.value
         self.http_endpoint = f"{URL_PREFIXES['http']}{self.domain}:{http_port}"
@@ -86,7 +86,7 @@ class FairNode:
 
 
 def init_fair() -> FairManager:
-    """Initializes a FairManager by trying a list of anchor endpoints."""
+    """Initializes a FairManager by trying a list of anchor endpoints"""
     try:
         endpoints_data = read_json(ANCHOR_FILEPATH)
         http_endpoints = endpoints_data.get('http_endpoints', [])
@@ -96,18 +96,20 @@ def init_fair() -> FairManager:
     for endpoint in http_endpoints:
         try:
             fair = FairManager(endpoint, SM_ADDRESS)
-            logger.info(f'FAIR Manager initialized successfully with endpoint: {endpoint}')
+            logger.info(f'FAIR Manager was successfully initialized with endpoint: {endpoint}')
             return fair
         except Exception as e:
             logger.info(f"Failed to connect to anchor endpoint '{endpoint}': {e}")
 
-    raise FairManagerInitError('No working anchor endpoint found.')
+    raise FairManagerInitError('No working anchor endpoint found')
 
 
-def _fetch_active_nodes(fair_manager: FairManager) -> List[FairNode]:
+def _fetch_active_committee_nodes(fair_manager: FairManager) -> List[FairNode]:
     """Retrieves all active nodes and converts them into FairNode objects"""
-    node_ids = fair_manager.nodes.get_active_node_ids()
-    logger.info(f'Found {len(node_ids)} active nodes: {node_ids}')
+    active_committee_id = fair_manager.committee.get_active_committee_index()
+    active_committee = fair_manager.committee.get_committee(active_committee_id)
+    node_ids = active_committee.node_ids
+    logger.info(f'Found {len(node_ids)} active committee nodes: {node_ids}')
     return [
         FairNode(
             id=node.id, name=node.name, ip=node.ip_str,
@@ -144,31 +146,33 @@ def _filter_healthy_nodes(nodes: List[FairNode]) -> List[FairNode]:
         healthy_nodes.append(node)
 
     logger.info(f'Found {len(healthy_nodes)} healthy and synchronized nodes')
+    logger.debug(f'Healthy nodes: {healthy_nodes}')
+
     return healthy_nodes
 
 
 def update_anchor_file(http_endpoints: List[str]):
-    """Overwrites the anchor endpoints file with the latest list of healthy endpoints."""
-    logger.info(f'Updating anchor file at {ANCHOR_FILEPATH} with {len(http_endpoints)} endpoints.')
+    """Overwrites the anchor endpoints file with the latest list of healthy endpoints"""
+    logger.info(f'Updating anchor endpoints file with {len(http_endpoints)} endpoints')
     try:
         data_to_write = {'http_endpoints': http_endpoints}
         with open(ANCHOR_FILEPATH, 'w') as f:
             json.dump(data_to_write, f, indent=4)
     except IOError as e:
-        logger.error(f'Failed to write updated anchor file: {e}')
+        logger.error(f'Failed to write updated anchor endpoints file: {e}')
 
 
 def generate_endpoints() -> tuple[dict, list]:
-    """Generate http and ws endpoints of active healthy FAIR nodes"""
+    """Generate http and ws endpoints of active committee healthy FAIR nodes"""
     fair_manager = init_fair()
-    all_nodes = _fetch_active_nodes(fair_manager)
+    all_nodes = _fetch_active_committee_nodes(fair_manager)
     healthy_nodes = _filter_healthy_nodes(all_nodes)
 
     healthy_http_endpoints = [node.http_endpoint for node in healthy_nodes]
 
     nginx_config = {
         'http_endpoints': [
-            http_ep.removeprefix('http://') for http_ep in healthy_http_endpoints
+            http_endpoint.removeprefix('http://') for http_endpoint in healthy_http_endpoints
         ],
         'ws_endpoints': [
             node.ws_endpoint.removeprefix('ws://') for node in healthy_nodes
@@ -176,6 +180,7 @@ def generate_endpoints() -> tuple[dict, list]:
     }
 
     return nginx_config, healthy_http_endpoints
+
 
 if __name__ == '__main__':
     endpoints = generate_endpoints()
