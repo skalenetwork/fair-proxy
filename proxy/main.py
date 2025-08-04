@@ -31,10 +31,12 @@ from proxy.config import (
 
 logger = logging.getLogger(__name__)
 
+
 def setup_environment():
     init_default_logger()
     logger.info("Starting FAIR Proxy server")
     Path(TMP_UPSTREAMS_FOLDER).mkdir(parents=True, exist_ok=True)
+
 
 def main():
     setup_environment()
@@ -42,15 +44,15 @@ def main():
     while True:
         logger.info("Starting new endpoint collection cycle...")
         nginx_endpoints, healthy_http_list = generate_endpoints()
-        logger.info(f'ANCHOR: {healthy_http_list}')
         if healthy_http_list:
             update_anchor_file(healthy_http_list)
+            logger.info(f'The new anchor endpoints: {healthy_http_list}')
         else:
             logger.warning("No healthy endpoints found. Anchor endpoints file will not be updated")
         write_json(CHAIN_INFO_FILEPATH, nginx_endpoints)
         update_nginx_configs(nginx_endpoints)
         send_heartbeat(HEARTBEAT_URL)
-        logger.info(f"Proxy cycle finished. Sleeping for {MONITOR_INTERVAL}s.")
+        logger.info(f"Proxy cycle finished. Sleeping for {MONITOR_INTERVAL}s")
         sleep(MONITOR_INTERVAL)
 
 
