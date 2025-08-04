@@ -34,7 +34,7 @@ CHAIN_INFO_FILEPATH = os.path.join(NGINX_WWW_FOLDER, 'chain.json')
 DATA_FOLDER = os.path.join(PROJECT_PATH, 'data')
 ANCHOR_FILEPATH = os.path.join(DATA_FOLDER, 'anchor_endpoints.json')
 
-SM_ADDRESS = os.getenv('SM_ADDRESS')
+FAIR_CONTRACTS = os.getenv('FAIR_CONTRACTS')
 
 TEMPLATES_FOLDER = os.path.join(PROJECT_PATH, 'templates')
 

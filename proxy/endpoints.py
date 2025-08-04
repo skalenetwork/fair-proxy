@@ -26,7 +26,7 @@ from typing import List
 
 from skale import FairManager
 
-from proxy.config import ALLOWED_TIMESTAMP_DIFF, SM_ADDRESS, ANCHOR_FILEPATH
+from proxy.config import ALLOWED_TIMESTAMP_DIFF, FAIR_CONTRACTS, ANCHOR_FILEPATH
 from proxy.helper import make_rpc_call, read_json, write_json
 from proxy.skaled_ports import SkaledPorts
 
@@ -95,7 +95,7 @@ def init_fair() -> FairManager:
 
     for endpoint in http_endpoints:
         try:
-            fair = FairManager(endpoint, SM_ADDRESS)
+            fair = FairManager(endpoint, FAIR_CONTRACTS)
             logger.info(f'FAIR Manager was successfully initialized with endpoint: {endpoint}')
             return fair
         except Exception as e:

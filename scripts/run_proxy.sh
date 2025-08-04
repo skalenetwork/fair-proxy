@@ -2,7 +2,7 @@
 
 set -e
 
-: "${SM_ADDRESS?Need to set SM_ADDRESS}"
+: "${FAIR_CONTRACTS?Need to set FAIR_CONTRACTS}"
 : "${USE_ALB:=False}"
 
 export SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"

@@ -2,7 +2,7 @@ services:
   fair-proxy:
     environment:
       HEARTBEAT_URL: ${HEARTBEAT_URL}
-      SM_ADDRESS: ${SM_ADDRESS}
+      FAIR_CONTRACTS: ${FAIR_CONTRACTS}
     image: fair-proxy:latest
     container_name: proxy_admin
     build:
