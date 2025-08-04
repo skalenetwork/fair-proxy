@@ -36,47 +36,47 @@ logger = logging.getLogger(__name__)
 docker_client = docker.DockerClient()
 
 
-def update_nginx_configs(chain_endpoints: dict) -> None:
+def update_nginx_config(chain_endpoints: dict) -> None:
     process_nginx_config_template(chain_endpoints)
-    move_nginx_configs()
+    move_nginx_config()
     monitor_nginx_container()
 
 
-def move_nginx_configs():
-    """Moves nginx configs from the temporary directories to the main folders"""
-    logger.info('Moving nginx configs from temporary directories...')
+def move_nginx_config():
+    """Moves Nginx config from the temporary directory to the main folder"""
+    logger.info('Moving Nginx config from temporary directory...')
     shutil.rmtree(UPSTREAMS_FOLDER, ignore_errors=True)
     shutil.move(TMP_UPSTREAMS_FOLDER, UPSTREAMS_FOLDER)
     Path(TMP_UPSTREAMS_FOLDER).mkdir(parents=True, exist_ok=True)
-    logger.info('nginx configs moved')
+    logger.info('Nginx config moved')
 
 
 def monitor_nginx_container(d_client=None):
-    logger.info('Going to restart nginx container')
+    logger.info('Going to restart Nginx container')
     d_client = d_client or docker_client
     nginx_container = d_client.containers.get(NGINX_CONTAINER_NAME)
 
     if is_container_running(nginx_container):
         reload_nginx(nginx_container)
     else:
-        logger.info('nginx container is not running, trying to restart')
+        logger.info('Nginx container is not running, trying to restart')
         nginx_container.restart()
 
 
 def reload_nginx(container) -> int:
-    """Safely reloads NGINX configuration"""
-    logger.info("Waiting briefly before reloading NGINX...")
+    """Safely reloads Nginx configuration"""
+    logger.info("Waiting briefly before reloading Nginx...")
     time.sleep(0.5)
-    logger.info("Sending reload command to NGINX...")
+    logger.info("Sending reload command to Nginx...")
     exit_code, output = container.exec_run(cmd='nginx -s reload')
     if exit_code != 0:
         logger.warning(
-            "Could not reload NGINX configuration. "
+            "Could not reload Nginx configuration. "
             f"Exit Code: {exit_code}\n"
             f"Output: {output.decode('utf-8').strip()}"
         )
     else:
-        logger.info('Successfully reloaded NGINX service')
+        logger.info('Successfully reloaded Nginx service')
 
     return exit_code
 

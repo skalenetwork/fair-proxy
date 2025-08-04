@@ -21,7 +21,7 @@ import logging
 from time import sleep
 from pathlib import Path
 
-from proxy.nginx import update_nginx_configs
+from proxy.nginx import update_nginx_config
 from proxy.endpoints import generate_endpoints, update_anchor_file
 from proxy.helper import init_default_logger, write_json
 from proxy.heartbeat import send_heartbeat
@@ -50,7 +50,7 @@ def main():
         else:
             logger.warning("No healthy endpoints found. Anchor endpoints file will not be updated")
         write_json(CHAIN_INFO_FILEPATH, nginx_endpoints)
-        update_nginx_configs(nginx_endpoints)
+        update_nginx_config(nginx_endpoints)
         send_heartbeat(HEARTBEAT_URL)
         logger.info(f"Proxy cycle finished. Sleeping for {MONITOR_INTERVAL}s")
         sleep(MONITOR_INTERVAL)
