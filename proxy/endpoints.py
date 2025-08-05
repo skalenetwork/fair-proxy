@@ -19,13 +19,13 @@
 
 
 import logging
-import requests
 from dataclasses import dataclass, field
 from typing import List
 
+import requests
 from skale import FairManager
 
-from proxy.config import ALLOWED_TIMESTAMP_DIFF, FAIR_CONTRACTS, ANCHOR_FILEPATH, URL_PREFIXES
+from proxy.config import ALLOWED_TIMESTAMP_DIFF, ANCHOR_FILEPATH, FAIR_CONTRACTS, URL_PREFIXES
 from proxy.helper import make_rpc_call, read_json, write_json
 from proxy.skaled_ports import SkaledPorts
 

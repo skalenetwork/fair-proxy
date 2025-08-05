@@ -18,16 +18,14 @@
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import logging
-from time import sleep
 from pathlib import Path
+from time import sleep
 
-from proxy.nginx import update_nginx_config
+from proxy.config import CHAIN_INFO_FILEPATH, HEARTBEAT_URL, MONITOR_INTERVAL, TMP_UPSTREAMS_FOLDER
 from proxy.endpoints import generate_endpoints, update_anchor_file
-from proxy.helper import init_default_logger, write_json
 from proxy.heartbeat import send_heartbeat
-from proxy.config import (
-    CHAIN_INFO_FILEPATH, MONITOR_INTERVAL, TMP_UPSTREAMS_FOLDER, HEARTBEAT_URL
-)
+from proxy.helper import init_default_logger, write_json
+from proxy.nginx import update_nginx_config
 
 logger = logging.getLogger(__name__)
 

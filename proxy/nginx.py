@@ -17,20 +17,22 @@
 #   You should have received a copy of the GNU Affero General Public License
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+import logging
 import os
 import shutil
-import logging
 import time
 from pathlib import Path
 
 import docker
 
-from proxy.helper import process_template
 from proxy.config import (
-    UPSTREAM_NGINX_TEMPLATE, UPSTREAMS_FOLDER,
-    NGINX_CONTAINER_NAME, CONTAINER_RUNNING_STATUS, TMP_UPSTREAMS_FOLDER
+    CONTAINER_RUNNING_STATUS,
+    NGINX_CONTAINER_NAME,
+    TMP_UPSTREAMS_FOLDER,
+    UPSTREAM_NGINX_TEMPLATE,
+    UPSTREAMS_FOLDER,
 )
-
+from proxy.helper import process_template
 
 logger = logging.getLogger(__name__)
 docker_client = docker.DockerClient()
