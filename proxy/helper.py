@@ -1,4 +1,3 @@
-#
 #   This file is part of FAIR Proxy
 #
 #   Copyright (C) 2025 - Present SKALE Labs
