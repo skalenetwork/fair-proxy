@@ -82,25 +82,6 @@ class FairNode:
         return abs(max_timestamp - self.block_ts) <= ALLOWED_TIMESTAMP_DIFF
 
 
-def init_fair() -> FairManager:
-    """Initializes a FairManager by trying a list of anchor endpoints"""
-    try:
-        endpoints_data = read_json(ANCHOR_FILEPATH)
-        http_endpoints = endpoints_data.get('http_endpoints', [])
-    except Exception as e:
-        raise FairManagerInitError(f'Failed to read or parse anchor endpoints file: {e}') from e
-
-    for endpoint in http_endpoints:
-        try:
-            fair = FairManager(endpoint, FAIR_CONTRACTS)
-            logger.info(f'FAIR Manager was successfully initialized with endpoint: {endpoint}')
-            return fair
-        except Exception as e:
-            logger.info(f"Failed to connect to anchor endpoint '{endpoint}': {e}")
-
-    raise FairManagerInitError('No working anchor endpoint found')
-
-
 def _fetch_active_committee_nodes(fair_manager: FairManager) -> List[FairNode]:
     """Retrieves all active nodes and converts them into FairNode objects"""
     active_committee_id = fair_manager.committee.get_active_committee_index()
@@ -157,7 +138,9 @@ def update_anchor_file(http_endpoints: List[str]):
 
 def generate_endpoints() -> tuple[dict, list]:
     """Generate http and ws endpoints of active committee healthy FAIR nodes"""
-    fair_manager = init_fair()
+    anchor_endpoints_data = read_json(ANCHOR_FILEPATH)
+    anchor_endpoints = anchor_endpoints_data.get('http_endpoints', [])
+    fair_manager = FairManager(anchor_endpoints, FAIR_CONTRACTS)
     all_nodes = _fetch_active_committee_nodes(fair_manager)
     healthy_nodes = _filter_healthy_nodes(all_nodes)
 
