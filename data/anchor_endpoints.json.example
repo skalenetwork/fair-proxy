@@ -1,0 +1,6 @@
+{
+    "anchor_endpoints": [
+        "http://<node1_domain_name>:<PORT1>",
+        "http://<node2_domain_name>:<PORT2>",
+    ]
+}
