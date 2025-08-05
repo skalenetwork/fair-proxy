@@ -19,7 +19,6 @@
 
 import logging
 from dataclasses import dataclass, field
-from typing import List
 
 import requests
 from skale import FairManager
@@ -81,7 +80,7 @@ class FairNode:
         return abs(max_timestamp - self.block_ts) <= ALLOWED_TIMESTAMP_DIFF
 
 
-def _fetch_active_committee_nodes(fair_manager: FairManager) -> List[FairNode]:
+def _fetch_active_committee_nodes(fair_manager: FairManager) -> list[FairNode]:
     """Retrieves all active nodes and converts them into FairNode objects"""
     active_committee_id = fair_manager.committee.get_active_committee_index()
     active_committee = fair_manager.committee.get_committee(active_committee_id)
@@ -97,7 +96,7 @@ def _fetch_active_committee_nodes(fair_manager: FairManager) -> List[FairNode]:
     ]
 
 
-def _filter_healthy_nodes(nodes: List[FairNode]) -> List[FairNode]:
+def _filter_healthy_nodes(nodes: list[FairNode]) -> list[FairNode]:
     """Filters a list of nodes to return only accessible and synced ones"""
     for node in nodes:
         node.fetch_block_timestamp()
@@ -128,7 +127,7 @@ def _filter_healthy_nodes(nodes: List[FairNode]) -> List[FairNode]:
     return healthy_nodes
 
 
-def update_anchor_file(endpoints: List[str]):
+def update_anchor_file(endpoints: list[str]):
     """Overwrites the anchor endpoints file with the latest list of healthy endpoints"""
     logger.info(f'Updating anchor endpoints file with {len(endpoints)} endpoints')
     data_to_write = {'anchor_endpoints': endpoints}
