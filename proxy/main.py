@@ -47,11 +47,12 @@ def main():
         if healthy_http_list:
             update_anchor_file(healthy_http_list)
             logger.info(f'The new anchor endpoints: {healthy_http_list}')
+            write_json(CHAIN_INFO_FILEPATH, nginx_endpoints)
+            update_nginx_config(nginx_endpoints)
+            send_heartbeat(HEARTBEAT_URL)
         else:
             logger.warning("No healthy endpoints found. Anchor endpoints file will not be updated")
-        write_json(CHAIN_INFO_FILEPATH, nginx_endpoints)
-        update_nginx_config(nginx_endpoints)
-        send_heartbeat(HEARTBEAT_URL)
+
         logger.info(f"Proxy cycle finished. Sleeping for {MONITOR_INTERVAL}s")
         sleep(MONITOR_INTERVAL)
 
