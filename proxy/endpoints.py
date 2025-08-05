@@ -29,14 +29,8 @@ from proxy.skaled_ports import SkaledPorts
 logger = logging.getLogger(__name__)
 
 
-class FairManagerInitError(Exception):
-    """Custom exception for failures during FairManager initialization"""
-    pass
-
-
 @dataclass
 class FairNode:
-    """A dataclass to represent a Fair node with its endpoints"""
     id: int
     name: str
     ip: str
@@ -90,8 +84,7 @@ def _fetch_active_committee_nodes(fair_manager: FairManager) -> list[FairNode]:
             id=node.id, name=node.name, ip=node.ip_str,
             domain=node.domain_name, base_port=node.port
         )
-        for node_id in node_ids
-        if (node := fair_manager.nodes.get(node_id))
+        for node in (fair_manager.nodes[node_id] for node_id in node_ids)
     ]
 
 
