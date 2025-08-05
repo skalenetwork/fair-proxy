@@ -84,7 +84,7 @@ def _fetch_active_committee_nodes(fair_manager: FairManager) -> list[FairNode]:
             id=node.id, name=node.name, ip=node.ip_str,
             domain=node.domain_name, base_port=node.port
         )
-        for node in (fair_manager.nodes[node_id] for node_id in node_ids)
+        for node in (fair_manager.nodes.get(node_id) for node_id in node_ids)
     ]
 
 
