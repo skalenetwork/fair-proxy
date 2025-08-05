@@ -51,3 +51,5 @@ NGINX_CONTAINER_NAME = 'proxy_nginx'
 CONTAINER_RUNNING_STATUS = 'running'
 
 ALLOWED_TIMESTAMP_DIFF = 300
+
+URL_PREFIXES = {'http': 'http://', 'ws': 'ws://'}

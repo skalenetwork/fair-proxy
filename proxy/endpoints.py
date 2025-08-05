@@ -18,7 +18,6 @@
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 
-import json
 import logging
 import requests
 from dataclasses import dataclass, field
@@ -26,13 +25,11 @@ from typing import List
 
 from skale import FairManager
 
-from proxy.config import ALLOWED_TIMESTAMP_DIFF, FAIR_CONTRACTS, ANCHOR_FILEPATH
+from proxy.config import ALLOWED_TIMESTAMP_DIFF, FAIR_CONTRACTS, ANCHOR_FILEPATH, URL_PREFIXES
 from proxy.helper import make_rpc_call, read_json, write_json
 from proxy.skaled_ports import SkaledPorts
 
 logger = logging.getLogger(__name__)
-
-URL_PREFIXES = {'http': 'http://', 'ws': 'ws://'}
 
 
 class FairManagerInitError(Exception):
@@ -168,10 +165,11 @@ def generate_endpoints() -> tuple[dict, list]:
 
     nginx_config = {
         'http_endpoints': [
-            http_endpoint.removeprefix('http://') for http_endpoint in healthy_http_endpoints
+            http_endpoint.removeprefix(URL_PREFIXES['http']) for http_endpoint in
+            healthy_http_endpoints
         ],
         'ws_endpoints': [
-            node.ws_endpoint.removeprefix('ws://') for node in healthy_nodes
+            node.ws_endpoint.removeprefix(URL_PREFIXES['ws']) for node in healthy_nodes
         ],
     }
 
