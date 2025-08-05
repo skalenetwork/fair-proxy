@@ -129,17 +129,17 @@ def _filter_healthy_nodes(nodes: List[FairNode]) -> List[FairNode]:
     return healthy_nodes
 
 
-def update_anchor_file(http_endpoints: List[str]):
+def update_anchor_file(endpoints: List[str]):
     """Overwrites the anchor endpoints file with the latest list of healthy endpoints"""
-    logger.info(f'Updating anchor endpoints file with {len(http_endpoints)} endpoints')
-    data_to_write = {'http_endpoints': http_endpoints}
+    logger.info(f'Updating anchor endpoints file with {len(endpoints)} endpoints')
+    data_to_write = {'anchor_endpoints': endpoints}
     write_json(ANCHOR_FILEPATH, data_to_write)
 
 
 def generate_endpoints() -> tuple[dict, list]:
     """Generate http and ws endpoints of active committee healthy FAIR nodes"""
     anchor_endpoints_data = read_json(ANCHOR_FILEPATH)
-    anchor_endpoints = anchor_endpoints_data.get('http_endpoints', [])
+    anchor_endpoints = anchor_endpoints_data.get('anchor_endpoints', [])
     fair_manager = FairManager(anchor_endpoints, FAIR_CONTRACTS)
     all_nodes = _fetch_active_committee_nodes(fair_manager)
     healthy_nodes = _filter_healthy_nodes(all_nodes)
