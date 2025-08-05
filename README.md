@@ -15,7 +15,7 @@ JSON-RPC endpoints for FAIR chain. It is based on NGINX.
 ### Repo setup
 
 1. Clone repo & all submodules
-2. Copy `data/anchor_endpoints.json.template` to `data/anchor_endpoints.json` and replace the placeholders with the actual anchor endpoint(s) for initializing the FAIR Manager.
+2. Copy `data/anchor_endpoints.json.example` to `data/anchor_endpoints.json` and replace the placeholders with the actual anchor endpoint(s) for initializing the FAIR Manager.
 3. Put `server.crt` and `server.key` files in `data` folder
 4. Export all required environment variables (see below)
 5. Run `scripts/run_proxy.sh`
