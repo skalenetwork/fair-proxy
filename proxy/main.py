@@ -20,7 +20,7 @@ from pathlib import Path
 from time import sleep
 
 from proxy.config import CHAIN_INFO_FILEPATH, HEARTBEAT_URL, MONITOR_INTERVAL, TMP_UPSTREAMS_FOLDER
-from proxy.endpoints import generate_endpoints, update_anchor_file
+from proxy.endpoints import generate_active_committee_endpoints, update_anchor_file
 from proxy.heartbeat import send_heartbeat
 from proxy.helper import init_default_logger, write_json
 from proxy.nginx import update_nginx_config
@@ -39,7 +39,7 @@ def main():
 
     while True:
         logger.info("Starting new endpoint collection cycle...")
-        nginx_endpoints, healthy_http_list = generate_endpoints()
+        nginx_endpoints, healthy_http_list = generate_active_committee_endpoints()
         if healthy_http_list:
             update_anchor_file(healthy_http_list)
             logger.debug(f'The new anchor endpoints: {healthy_http_list}')

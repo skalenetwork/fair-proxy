@@ -125,7 +125,7 @@ def update_anchor_file(endpoints: list[str]):
     write_json(ANCHOR_FILEPATH, data_to_write)
 
 
-def generate_endpoints() -> tuple[dict, list]:
+def generate_active_committee_endpoints() -> tuple[dict, list]:
     anchor_endpoints_data = read_json(ANCHOR_FILEPATH)
     anchor_endpoints = anchor_endpoints_data.get('anchor_endpoints', [])
     fair_manager = FairManager(anchor_endpoints, FAIR_CONTRACTS)
@@ -148,5 +148,5 @@ def generate_endpoints() -> tuple[dict, list]:
 
 
 if __name__ == '__main__':
-    endpoints = generate_endpoints()
+    endpoints = generate_active_committee_endpoints()
     print(f'Endpoints: {endpoints}')
