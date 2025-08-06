@@ -42,14 +42,12 @@ class FairNode:
     block_ts: int = -1
 
     def __post_init__(self):
-        """Calculates endpoints after the node object is created"""
         http_port = self.base_port + SkaledPorts.HTTP_JSON.value
         ws_port = self.base_port + SkaledPorts.WS_JSON.value
         self.http_endpoint = f"{URL_PREFIXES['http']}{self.domain}:{http_port}"
         self.ws_endpoint = f"{URL_PREFIXES['ws']}{self.domain}:{ws_port}"
 
-    def fetch_block_timestamp(self):
-        """Fetches and updates the timestamp of the latest block from the node"""
+    def fetch_latest_block_timestamp(self):
         try:
             res = make_rpc_call(self.http_endpoint, 'eth_getBlockByNumber', ['latest', False])
             if res and res.ok:
@@ -60,7 +58,6 @@ class FairNode:
             self.block_ts = -1
 
     def is_accessible(self) -> bool:
-        """Checks if the node's http endpoint is responsive"""
         try:
             response = requests.head(self.http_endpoint, timeout=10)
             return response.status_code < 400
@@ -68,14 +65,12 @@ class FairNode:
             return False
 
     def is_synced(self, max_timestamp: int) -> bool:
-        """Checks if the node is synced"""
         if self.block_ts < 0:
             return False
         return abs(max_timestamp - self.block_ts) <= ALLOWED_TIMESTAMP_DIFF
 
 
 def _fetch_active_committee_nodes(fair_manager: FairManager) -> list[FairNode]:
-    """Retrieves all active nodes and converts them into FairNode objects"""
     active_committee_id = fair_manager.committee.get_active_committee_index()
     active_committee = fair_manager.committee.get_committee(active_committee_id)
     node_ids = active_committee.node_ids
@@ -92,7 +87,7 @@ def _fetch_active_committee_nodes(fair_manager: FairManager) -> list[FairNode]:
 def _filter_healthy_nodes(nodes: list[FairNode]) -> list[FairNode]:
     logger.info('Fetching block timestamps for committee nodes...')
     with ThreadPoolExecutor(max_workers=len(nodes)) as executor:
-        list(executor.map(lambda node: node.fetch_block_timestamp(), nodes))
+        list(executor.map(lambda node: node.fetch_latest_block_timestamp(), nodes))
 
     valid_timestamps = [node.block_ts for node in nodes if node.block_ts >= 0]
     if not valid_timestamps:
@@ -125,14 +120,12 @@ def _filter_healthy_nodes(nodes: list[FairNode]) -> list[FairNode]:
 
 
 def update_anchor_file(endpoints: list[str]):
-    """Overwrites the anchor endpoints file with the latest list of healthy endpoints"""
     logger.info(f'Updating anchor endpoints file with {len(endpoints)} endpoints')
     data_to_write = {'anchor_endpoints': endpoints}
     write_json(ANCHOR_FILEPATH, data_to_write)
 
 
 def generate_endpoints() -> tuple[dict, list]:
-    """Generate http and ws endpoints of active committee healthy FAIR nodes"""
     anchor_endpoints_data = read_json(ANCHOR_FILEPATH)
     anchor_endpoints = anchor_endpoints_data.get('anchor_endpoints', [])
     fair_manager = FairManager(anchor_endpoints, FAIR_CONTRACTS)
