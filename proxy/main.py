@@ -42,7 +42,7 @@ def main():
         nginx_endpoints, healthy_http_list = generate_endpoints()
         if healthy_http_list:
             update_anchor_file(healthy_http_list)
-            logger.info(f'The new anchor endpoints: {healthy_http_list}')
+            logger.debug(f'The new anchor endpoints: {healthy_http_list}')
             write_json(CHAIN_INFO_FILEPATH, nginx_endpoints)
             update_nginx_config(nginx_endpoints)
             send_heartbeat(HEARTBEAT_URL)

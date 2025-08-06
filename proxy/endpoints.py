@@ -17,6 +17,7 @@
 
 
 import logging
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field
 
 import requests
@@ -89,9 +90,9 @@ def _fetch_active_committee_nodes(fair_manager: FairManager) -> list[FairNode]:
 
 
 def _filter_healthy_nodes(nodes: list[FairNode]) -> list[FairNode]:
-    """Filters a list of nodes to return only accessible and synced ones"""
-    for node in nodes:
-        node.fetch_block_timestamp()
+    logger.info('Fetching block timestamps for committee nodes...')
+    with ThreadPoolExecutor(max_workers=len(nodes)) as executor:
+        list(executor.map(lambda node: node.fetch_block_timestamp(), nodes))
 
     valid_timestamps = [node.block_ts for node in nodes if node.block_ts >= 0]
     if not valid_timestamps:
@@ -100,18 +101,22 @@ def _filter_healthy_nodes(nodes: list[FairNode]) -> list[FairNode]:
     max_ts = max(valid_timestamps)
     logger.info(f'Maximum block timestamp across all nodes: {max_ts}')
 
-    healthy_nodes = []
-    for node in nodes:
+    def check_node_health(node: FairNode) -> FairNode | None:
         if not node.is_accessible():
             logger.warning(f'Node {node.id} ({node.http_endpoint}) is not accessible')
-            continue
+            return None
         if not node.is_synced(max_ts):
             logger.warning(
                 f'Node {node.id} ({node.http_endpoint}) is not synced. '
                 f'(Node TS: {node.block_ts}, Max TS: {max_ts})'
             )
-            continue
-        healthy_nodes.append(node)
+            return None
+        return node
+
+    logger.info('Checking health and sync status for committee nodes...')
+    with ThreadPoolExecutor(max_workers=len(nodes)) as executor:
+        results = executor.map(check_node_health, nodes)
+        healthy_nodes = [node for node in results if node is not None]
 
     logger.info(f'Found {len(healthy_nodes)} healthy and synchronized nodes')
     logger.debug(f'Healthy nodes: {healthy_nodes}')
