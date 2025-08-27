@@ -1,4 +1,4 @@
 Jinja2==3.1.6
 colorful==0.5.7
 docker==7.1.0
-skale.py==7.4dev2
+skale.py==7.3dev3
