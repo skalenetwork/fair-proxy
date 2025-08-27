@@ -20,9 +20,11 @@ http {
 
     server {
         listen 80;
+        #SSL_CONFIG_START
         listen 443 ssl;
         ssl_certificate /data/server.crt;
         ssl_certificate_key /data/server.key;
+        #SSL_CONFIG_END
         server_name _;
 
         limit_req zone=one burst=100;
