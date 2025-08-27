@@ -17,6 +17,7 @@
 
 
 import logging
+import random
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field
 
@@ -128,6 +129,7 @@ def update_anchor_file(endpoints: list[str]):
 def generate_active_committee_endpoints() -> tuple[dict, list]:
     anchor_endpoints_data = read_json(ANCHOR_FILEPATH)
     anchor_endpoints = anchor_endpoints_data.get('anchor_endpoints', [])
+    random.shuffle(anchor_endpoints)
     fair_manager = FairManager(anchor_endpoints, FAIR_CONTRACTS)
     all_nodes = _fetch_active_committee_nodes(fair_manager)
     healthy_nodes = _filter_healthy_nodes(all_nodes)
