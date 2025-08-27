@@ -37,7 +37,7 @@ if [[ "$USE_ALB" == "True" ]]; then
     sed "/${SSL_START_MARKER}/,/${SSL_END_MARKER}/d" "$TEMPLATE_FILE" > "$TARGET_FILE"
 else
     # Remove the ALB real IP configuration block between markers from the template
-    sed "/${START_MARKER}/,/${END_MARKER}/d" "$TEMPLATE_FILE" > "$TARGET_FILE"
+    sed "/${REAL_IP_START_MARKER}/,/${REAL_IP_END_MARKER}/d" "$TEMPLATE_FILE" > "$TARGET_FILE"
 fi
 
 cd "$PROJECT_DIR"
