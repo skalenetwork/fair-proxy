@@ -15,8 +15,11 @@ TARGET_FILE="$CONFIG_DIR/nginx.conf"
 DATA_DIR="$PROJECT_DIR/data"
 ANCHOR_FILE="$DATA_DIR/anchor_endpoints.json"
 
-START_MARKER="#REAL_IP_CONFIG_START"
-END_MARKER="#REAL_IP_CONFIG_END"
+REAL_IP_START_MARKER="#REAL_IP_CONFIG_START"
+REAL_IP_END_MARKER="#REAL_IP_CONFIG_END"
+
+SSL_START_MARKER="#SSL_CONFIG_START"
+SSL_END_MARKER="#SSL_CONFIG_END"
 
 if [ ! -f "$TEMPLATE_FILE" ]; then
     echo "ERROR: Nginx template file is not found at $TEMPLATE_FILE"
@@ -30,10 +33,11 @@ fi
 
 
 if [[ "$USE_ALB" == "True" ]]; then
-    cp "$TEMPLATE_FILE" "$TARGET_FILE"
+    # Remove the SSL configuration block between markers from the template
+    sed "/${SSL_START_MARKER}/,/${SSL_END_MARKER}/d" "$TEMPLATE_FILE" > "$TARGET_FILE"
 else
     # Remove the ALB real IP configuration block between markers from the template
-    sed "/${START_MARKER}/,/${END_MARKER}/d" "$TEMPLATE_FILE" > "$TARGET_FILE"
+    sed "/${REAL_IP_START_MARKER}/,/${REAL_IP_END_MARKER}/d" "$TEMPLATE_FILE" > "$TARGET_FILE"
 fi
 
 cd "$PROJECT_DIR"
