@@ -25,7 +25,7 @@ logger = logging.getLogger(__name__)
 def send_heartbeat(heartbeat_url):
     if heartbeat_url:
         try:
-            response = requests.get(heartbeat_url)
+            response = requests.get(heartbeat_url, timeout=10)
             if response.status_code == 200:
                 logger.info('Heartbeat signal is successfully sent')
             else:
