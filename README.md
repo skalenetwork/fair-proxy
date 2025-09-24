@@ -3,7 +3,8 @@
 [![Discord](https://img.shields.io/discord/534485763354787851.svg)](https://discord.gg/vvUtWJB)
 
 FAIR Proxy is high performance, easy-to-run public service that provides proxied and load-balanced
-JSON-RPC endpoints for FAIR chain. It is based on NGINX.
+JSON-RPC endpoints for FAIR chain.
+It is based on NGINX.
 
 ## Usage guide
 
